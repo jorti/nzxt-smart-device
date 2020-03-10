@@ -1,0 +1,22 @@
+[Unit]
+Description=NZXT case fan control
+Documentation=man:liquidctl
+
+[Service]
+Type=exec
+ExecStart=/usr/local/bin/nzxt-smart-device.py
+PrivateTmp=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+PrivateNetwork=true
+NoNewPrivileges=true
+Nice=-1
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
