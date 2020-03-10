@@ -22,40 +22,58 @@ import json
 import sys
 import logging
 import re
+import argparse
 from time import sleep
 
 
+def init_device():
+    logging.info("Initializing devices")
+    init = subprocess.run(["/usr/bin/liquidctl", "initialize", "all"])
+    if init.returncode != 0:
+        sys.exit(init.returncode)
+
+
 def set_fan_speed(percent):
-    logging.info("Setting fan speed to {}%".format(percent))
-    subprocess.run(["/usr/bin/liquidctl", "set", "sync", "speed", str(percent)])
+    global current_speed
+    if current_speed != percent:
+        logging.info("Setting fan speed to {}%".format(percent))
+        result = subprocess.run(["/usr/bin/liquidctl", "set", "sync", "speed", str(percent)])
+        if result.returncode != 0:
+            logging.critical("Error setting fan speed")    
+            sys.exit(result.returncode)
+        current_speed = percent
 
 
-def set_led_color(color):
-    logging.info("Setting LED color to {}".format(color))
-    subprocess.run(["/usr/bin/liquidctl", "set", "led", "color", "fixed", color])
+def set_led(color, mode):
+    global current_led_color
+    global current_led_mode
+    if current_led_color != color or current_led_mode != mode:
+        logging.info("Setting LED color to {} and mode {}".format(color, mode))
+        result = subprocess.run(["/usr/bin/liquidctl", "set", "led", "color", mode, color])
+        if result.returncode != 0:
+            logging.critical("Error setting LEDs")
+            sys.exit(result.returncode)
+        current_led_color = color
+        current_led_mode = mode
 
-
-CHECK_INTERVAL = 10
-MIN_SPEED = 10
-TEMP1 = 55
-SPEED1 = 25
-TEMP2 = 60
-SPEED2 = 50
-TEMP3 = 63
-SPEED3 = 75
-TEMP4 = 65
-SPEED4 = 100
-RED = "ff0000"
-WHITE = "ffffff"
 
 logging.basicConfig(level=logging.INFO)
-logging.debug("Initializing devices")
-init = subprocess.run(["/usr/bin/liquidctl", "initialize", "all"])
-if init.returncode != 0:
-    sys.exit(init.returncode)
+parser = argparse.ArgumentParser(description="NZXT smart device control")
+parser.add_argument("--interval", type=int, default=10, help="Interval between checks")
+parser.add_argument("--min-speed", type=int, default=10, help="Minimum fan speed (%)")
+parser.add_argument("--max-speed", type=int, default=100, help="Maximum fan speed (%)")
+parser.add_argument("--max-temp", type=int, default=65, help="Maximum temperature allowed (ºC)")
+parser.add_argument("--led-mode", default="fixed", help="LED mode")
+parser.add_argument("--led-color", default="ffffff", help="Normal LED color")
+parser.add_argument("--led-color-warn", default="ff0000", help="Warning LED color")
+args = parser.parse_args()
 
-current_speed = MIN_SPEED
-set_fan_speed(MIN_SPEED)
+# Initialize global variables
+current_speed = 0
+current_led_color = ""
+current_led_mode = ""
+
+init_device()
 while True:
     # lm_sensors
     sensors_output = subprocess.check_output(["/usr/bin/sensors", "-j"])
@@ -66,25 +84,19 @@ while True:
     temp_nvme = sensors["nvme-pci-0100"]["Composite"]["temp1_input"]
     
     max_temp = max(temp_cpu, temp_gpu, temp_nvme)
-    if max_temp >= TEMP4:
+    if max_temp >= args.max_temp:
         logging.warning("Highest temperature: {}ºC".format(max_temp))
         logging.info("CPU temperature:   {}ºC".format(temp_cpu))
         logging.info("GPU temperature:   {}ºC".format(temp_gpu))
         logging.info("NVMe temperature:  {}ºC".format(temp_nvme))
-        new_speed = SPEED4
-    elif max_temp >= TEMP3:
-        new_speed = SPEED3
-    elif max_temp >= TEMP2:
-        new_speed = SPEED2
-    elif max_temp >= TEMP1:
-        new_speed = SPEED1
+        set_fan_speed(args.max_speed)
+        set_led(args.led_color_warn, args.led_mode)
     else:
-        new_speed = MIN_SPEED
-    if new_speed != current_speed:
-        set_fan_speed(new_speed)
-        if max_temp >= TEMP4:
-            set_led_color(RED)
-        else:
-            set_led_color(WHITE)
-        current_speed = new_speed
-    sleep(CHECK_INTERVAL)
+        # Calculate percentage of current temp over max temp and round it to 25, then apply a -25
+        percent = (max_temp*100)/args.max_temp
+        rounded_percent = int(25*round(percent/25))
+        final_percent = rounded_percent-25
+        logging.debug("max_temp: {}, configured_max_temp: {}, percent: {}, rounded_percent: {}, final_percent: {}".format(max_temp, args.max_temp, percent, rounded_percent, final_percent))
+        set_fan_speed(max(final_percent, args.min_speed))
+        set_led(args.led_color, args.led_mode)
+    sleep(args.interval)
