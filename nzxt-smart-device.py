@@ -1,4 +1,4 @@
-#!/usr/bin/python3 -u
+#!/usr/bin/python -u
 
 # Copyright 2020 Juan Orti Alcaine <jortialc@redhat.com>
 #
@@ -59,12 +59,13 @@ def set_led(color, mode):
 
 logging.basicConfig(level=logging.INFO)
 parser = argparse.ArgumentParser(description="NZXT smart device control")
-parser.add_argument("--interval", type=int, default=10, help="Interval between checks")
+parser.add_argument("--interval", type=int, default=10, help="Interval between checks (seconds)")
 parser.add_argument("--min-speed", type=int, default=10, help="Minimum fan speed (%)")
 parser.add_argument("--max-speed", type=int, default=100, help="Maximum fan speed (%)")
 parser.add_argument("--max-temp", type=int, default=65, help="Maximum temperature allowed (ºC)")
-parser.add_argument("--led-mode", default="fixed", help="LED mode")
-parser.add_argument("--led-color", default="ffffff", help="Normal LED color")
+parser.add_argument("--led-mode", default="fixed", help="Normal LED mode")
+parser.add_argument("--led-mode-warn", default="fixed", help="Warning LED mode")
+parser.add_argument("--led-color", default="555555", help="Normal LED color")
 parser.add_argument("--led-color-warn", default="ff0000", help="Warning LED color")
 args = parser.parse_args()
 
@@ -90,7 +91,7 @@ while True:
         logging.info("GPU temperature:   {}ºC".format(temp_gpu))
         logging.info("NVMe temperature:  {}ºC".format(temp_nvme))
         set_fan_speed(args.max_speed)
-        set_led(args.led_color_warn, args.led_mode)
+        set_led(args.led_color_warn, args.led_mode_warn)
     else:
         # Calculate percentage of current temp over max temp and round it to 25, then apply a -25
         percent = (max_temp*100)/args.max_temp
