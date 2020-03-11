@@ -57,17 +57,22 @@ def set_led(color, mode):
         current_led_mode = mode
 
 
-logging.basicConfig(level=logging.INFO)
 parser = argparse.ArgumentParser(description="NZXT smart device control")
-parser.add_argument("--interval", type=int, default=10, help="Interval between checks (seconds)")
-parser.add_argument("--min-speed", type=int, default=10, help="Minimum fan speed (%)")
-parser.add_argument("--max-speed", type=int, default=100, help="Maximum fan speed (%)")
-parser.add_argument("--max-temp", type=int, default=65, help="Maximum temperature allowed (ºC)")
+parser.add_argument("--interval", type=int, default=10, help="Interval between checks, in seconds")
+parser.add_argument("--min-speed", type=int, default=10, help="Minimum fan speed, in percent")
+parser.add_argument("--max-speed", type=int, default=100, help="Maximum fan speed, in percent")
+parser.add_argument("--max-temp", type=int, default=65, help="Maximum temperature allowed, in Celsius")
 parser.add_argument("--led-mode", default="fixed", help="Normal LED mode")
 parser.add_argument("--led-mode-warn", default="fixed", help="Warning LED mode")
 parser.add_argument("--led-color", default="555555", help="Normal LED color")
 parser.add_argument("--led-color-warn", default="ff0000", help="Warning LED color")
+parser.add_argument("--log-level", default="INFO", help="Log level", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
 args = parser.parse_args()
+
+numeric_level = getattr(logging, args.log_level.upper(), None)
+if not isinstance(numeric_level, int):
+    raise ValueError('Invalid log level: %s' % loglevel)
+logging.basicConfig(level=numeric_level)
 
 # Initialize global variables
 current_speed = 0
@@ -84,20 +89,26 @@ while True:
     temp_gpu = sensors["amdgpu-pci-0b00"]["edge"]["temp1_input"]
     temp_nvme = sensors["nvme-pci-0100"]["Composite"]["temp1_input"]
     
-    max_temp = max(temp_cpu, temp_gpu, temp_nvme)
-    if max_temp >= args.max_temp:
-        logging.warning("Highest temperature: {}ºC".format(max_temp))
+    current_max_temp = max(temp_cpu, temp_gpu, temp_nvme)
+    if current_max_temp >= args.max_temp:
+        logging.warning("Highest temperature: {}ºC".format(current_max_temp))
         logging.info("CPU temperature:   {}ºC".format(temp_cpu))
         logging.info("GPU temperature:   {}ºC".format(temp_gpu))
         logging.info("NVMe temperature:  {}ºC".format(temp_nvme))
         set_fan_speed(args.max_speed)
         set_led(args.led_color_warn, args.led_mode_warn)
     else:
-        # Calculate percentage of current temp over max temp and round it to 25, then apply a -25
-        percent = (max_temp*100)/args.max_temp
-        rounded_percent = int(25*round(percent/25))
-        final_percent = rounded_percent-25
-        logging.debug("max_temp: {}, configured_max_temp: {}, percent: {}, rounded_percent: {}, final_percent: {}".format(max_temp, args.max_temp, percent, rounded_percent, final_percent))
+        # Calculate percentage of current temp over max temp and choose a speed based on it
+        percent = (current_max_temp*100)/args.max_temp
+        if percent >= 95:
+            final_percent = 75
+        elif percent >= 90:
+            final_percent = 50
+        elif percent >= 80:
+            final_percent = 25
+        else:
+            final_percent = 0
+        logging.debug("current_max_temp: {}, configured_max_temp: {}, percent: {}, final_percent: {}".format(current_max_temp, args.max_temp, percent, final_percent))
         set_fan_speed(max(final_percent, args.min_speed))
         set_led(args.led_color, args.led_mode)
     sleep(args.interval)
