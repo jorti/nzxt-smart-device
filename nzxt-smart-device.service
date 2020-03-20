@@ -4,7 +4,8 @@ Documentation=man:liquidctl
 
 [Service]
 Type=exec
-ExecStart=/usr/local/bin/nzxt-smart-device.py
+EnvironmentFile=-/etc/sysconfig/nzxt-smart-device
+ExecStart=/usr/local/bin/nzxt-smart-device.py $CMD_OPTS
 PrivateTmp=yes
 CapabilityBoundingSet=
 ProtectSystem=strict
