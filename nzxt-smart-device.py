@@ -28,7 +28,7 @@ from time import sleep
 
 def init_device():
     logging.info("Initializing devices")
-    init = subprocess.run(["/usr/bin/liquidctl", "initialize", "all"])
+    init = subprocess.run(["/usr/bin/liquidctl", "--vendor", "0x1e71", "initialize"])
     if init.returncode != 0:
         sys.exit(init.returncode)
 
@@ -37,7 +37,7 @@ def set_fan_speed(percent):
     global current_speed
     if current_speed != percent:
         logging.info("Setting fan speed to {}%".format(percent))
-        result = subprocess.run(["/usr/bin/liquidctl", "set", "sync", "speed", str(percent)])
+        result = subprocess.run(["/usr/bin/liquidctl", "--vendor", "0x1e71", "set", "sync", "speed", str(percent)])
         if result.returncode != 0:
             logging.critical("Error setting fan speed")    
             sys.exit(result.returncode)
@@ -49,7 +49,7 @@ def set_led(color, mode):
     global current_led_mode
     if current_led_color != color or current_led_mode != mode:
         logging.info("Setting LED color to {} and mode {}".format(color, mode))
-        result = subprocess.run(["/usr/bin/liquidctl", "set", "led", "color", mode, color])
+        result = subprocess.run(["/usr/bin/liquidctl", "--vendor", "0x1e71", "set", "led", "color", mode, color])
         if result.returncode != 0:
             logging.critical("Error setting LEDs")
             sys.exit(result.returncode)
@@ -85,7 +85,7 @@ while True:
     sensors_output = subprocess.check_output(["/usr/bin/sensors", "-j"])
     logging.debug(sensors_output)
     sensors = json.loads(sensors_output)
-    temp_cpu = sensors["k10temp-pci-00c3"]["Tdie"]["temp1_input"]
+    temp_cpu = sensors["k10temp-pci-00c3"]["Tdie"]["temp2_input"]
     temp_gpu = sensors["amdgpu-pci-0b00"]["edge"]["temp1_input"]
     temp_nvme = sensors["nvme-pci-0100"]["Composite"]["temp1_input"]
     
