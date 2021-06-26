@@ -80,7 +80,7 @@ def get_sensors_max_temp():
             if not isinstance(sensors[device][sensor], dict):
                 continue
             for key in sensors[device][sensor].keys():
-                if "input" in key:
+                if "temp" in key and "input" in key:
                     logging.debug(
                         "Sensor temperature: device={} sensor={} input={} value={}".format(device, sensor, key,
                                                                                            sensors[device][
