@@ -4,20 +4,22 @@ Documentation=man:liquidctl
 
 [Service]
 Type=exec
-EnvironmentFile=-/etc/sysconfig/nzxt-smart-device
-ExecStart=/usr/local/bin/nzxt-smart-device.py $CMD_OPTS
+ExecStart=/usr/local/bin/nzxt-smart-device.py
 PrivateTmp=yes
 CapabilityBoundingSet=
 ProtectSystem=strict
-ProtectHome=true
-ProtectKernelTunables=true
-ProtectKernelModules=true
-ProtectControlGroups=true
-PrivateNetwork=true
-NoNewPrivileges=true
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+PrivateNetwork=yes
+NoNewPrivileges=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+MemoryDenyWriteExecute=yes
+RestrictRealtime=yes
+ProtectProc=invisible
 Nice=-1
-Restart=always
-RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+max_temp: 75
+max_fan_speed_percent: 100
+min_fan_speed_percent: 10
+led_color_ok: "555555"
+led_mode_ok: fixed
+led_color_warning: "ff0000"
+led_mode_warning: fixed
+check_interval_seconds: 10
+
+device:
+  name: NZXT Smart device
+  vendor_id: "0x1e71"
+  product_id: "0x1714"
