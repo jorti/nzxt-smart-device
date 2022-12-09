@@ -132,7 +132,7 @@ def validate_args():
 
 
 parser = argparse.ArgumentParser(description="NZXT smart device control")
-parser.add_argument("-c", "--config-file", help="Config file", default="/etc/nzxt-smart-device.yaml")
+parser.add_argument("-c", "--config-file", help="Config file", default="/etc/nzxt-smart-device/nzxt-smart-device.yaml")
 parser.add_argument("--log-level", default="INFO", help="Log level",
                     choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
 args = parser.parse_args()
